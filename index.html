@@ -1,459 +1,941 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rocket Rush</title>
-    <style>
-        :root {
-            --space-bg: #050510;
-            --ui-panel: rgba(20, 20, 40, 0.9);
-            --accent: #00d4ff;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Rocket Rush</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: var(--space-bg);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: white;
-            user-select: none;
-        }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+  :root {
+    --neon-blue: #00d4ff;
+    --neon-orange: #ff6b2b;
+    --neon-green: #00ff88;
+    --deep-space: #020814;
+    --panel-bg: rgba(0,20,50,0.85);
+  }
 
-        canvas {
-            display: block;
-            background: radial-gradient(circle at bottom, #1a1a2e 0%, #050510 100%);
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-        }
+  body {
+    background: var(--deep-space);
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
 
-        /* UI Overlays */
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(5, 5, 16, 0.8);
-            z-index: 10;
-        }
+  #gameWrapper {
+    position: relative;
+    width: min(420px, 100vw);
+    height: min(780px, 100vh);
+    overflow: hidden;
+    border: 1px solid rgba(0,212,255,0.2);
+    box-shadow: 0 0 60px rgba(0,212,255,0.1), inset 0 0 60px rgba(0,0,0,0.5);
+  }
 
-        .hidden { display: none !important; }
+  canvas { display: block; width: 100%; height: 100%; }
 
-        .panel {
-            background: var(--ui-panel);
-            padding: 2rem;
-            border-radius: 15px;
-            border: 2px solid var(--accent);
-            text-align: center;
-            min-width: 300px;
-            box-shadow: 0 0 20px var(--accent);
-        }
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.4s, transform 0.4s;
+    z-index: 10;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: scale(0.97); }
 
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            background: linear-gradient(to bottom, #fff, var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+  /* ── MAIN MENU ── */
+  #menuScreen { background: transparent; }
 
-        button {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: white;
-            background: transparent;
-            border: 1px solid white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
+  .menu-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow: 0 0 20px var(--neon-blue), 0 0 60px var(--neon-blue);
+    margin-bottom: 6px;
+    animation: titlePulse 3s ease-in-out infinite;
+  }
+  .menu-subtitle {
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--neon-blue);
+    font-size: 0.9rem;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 60px;
+    opacity: 0.7;
+  }
 
-        button:hover {
-            background: var(--accent);
-            border-color: var(--accent);
-            transform: scale(1.05);
-        }
+  @keyframes titlePulse {
+    0%,100% { text-shadow: 0 0 20px var(--neon-blue), 0 0 60px var(--neon-blue); }
+    50% { text-shadow: 0 0 30px var(--neon-blue), 0 0 80px var(--neon-blue), 0 0 120px rgba(0,212,255,0.4); }
+  }
 
-        /* Garage Styles */
-        .garage-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 14px 44px;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+    margin: 8px;
+    min-width: 200px;
+  }
+  .btn:active { transform: scale(0.96); }
 
-        .rocket-card {
-            padding: 10px;
-            border: 1px solid #444;
-            border-radius: 8px;
-            cursor: pointer;
-            opacity: 0.5;
-        }
+  .btn-primary {
+    background: linear-gradient(135deg, #0066cc, #00aaff);
+    color: #fff;
+    clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    box-shadow: 0 0 20px rgba(0,170,255,0.5);
+  }
+  .btn-primary:hover { box-shadow: 0 0 30px rgba(0,170,255,0.8), 0 0 60px rgba(0,170,255,0.3); transform: translateY(-2px); }
 
-        .rocket-card.unlocked { opacity: 1; border-color: var(--accent); }
-        .rocket-card.selected { background: rgba(0, 212, 255, 0.2); border-width: 2px; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--neon-blue);
+    border: 1px solid var(--neon-blue);
+    clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+  }
+  .btn-secondary:hover { background: rgba(0,212,255,0.1); box-shadow: 0 0 20px rgba(0,212,255,0.3); transform: translateY(-2px); }
 
-        /* HUD */
-        #hud {
-            position: absolute;
-            top: 20px;
-            left: 0;
-            width: 100%;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            pointer-events: none;
-            z-index: 5;
-            box-sizing: border-box;
-        }
+  .btn-danger {
+    background: linear-gradient(135deg, #cc3300, #ff6633);
+    color: #fff;
+    clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    box-shadow: 0 0 20px rgba(255,100,50,0.5);
+  }
 
-        .stat-box { font-weight: bold; font-size: 1.2rem; text-shadow: 2px 2px black; }
-    </style>
+  /* ── HUD ── */
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 14px 18px 0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    z-index: 5; pointer-events: none;
+  }
+  #hud.hidden { display: none; }
+  .hud-box {
+    background: var(--panel-bg);
+    border: 1px solid rgba(0,212,255,0.25);
+    padding: 6px 12px;
+    backdrop-filter: blur(8px);
+  }
+  .hud-label {
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+  }
+  .hud-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.95rem;
+    color: var(--neon-blue);
+    font-weight: 700;
+  }
+  #planetLabel {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    color: #fff;
+    letter-spacing: 2px;
+    text-align: center;
+    margin-top: 4px;
+    text-shadow: 0 0 10px var(--neon-blue);
+  }
+
+  /* ── GAME OVER ── */
+  #gameOverScreen {
+    background: rgba(2,8,20,0.93);
+    backdrop-filter: blur(10px);
+  }
+  .go-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--neon-orange);
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px var(--neon-orange);
+    margin-bottom: 30px;
+  }
+  .go-stat {
+    text-align: center; margin-bottom: 10px;
+  }
+  .go-stat-label { font-size: 0.7rem; letter-spacing: 3px; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+  .go-stat-value { font-family: 'Orbitron', monospace; font-size: 1.4rem; color: #fff; font-weight: 700; }
+  .go-divider {
+    width: 180px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+    margin: 20px auto;
+  }
+  .go-buttons { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+
+  /* ── GARAGE ── */
+  #garageScreen {
+    background: rgba(2,8,20,0.97);
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .garage-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.5rem; font-weight: 900;
+    color: #fff; letter-spacing: 3px;
+    text-shadow: 0 0 15px var(--neon-blue);
+    margin-bottom: 6px;
+  }
+  .garage-sub { font-size: 0.75rem; color: rgba(255,255,255,0.35); letter-spacing: 3px; margin-bottom: 24px; }
+  .rocket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 360px; }
+  .rocket-card {
+    background: rgba(0,30,60,0.7);
+    border: 1px solid rgba(0,212,255,0.15);
+    padding: 16px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .rocket-card.locked { filter: grayscale(0.8); opacity: 0.5; cursor: not-allowed; }
+  .rocket-card.selected { border-color: var(--neon-blue); box-shadow: 0 0 20px rgba(0,212,255,0.4); background: rgba(0,60,120,0.5); }
+  .rocket-card:not(.locked):not(.selected):hover { border-color: rgba(0,212,255,0.5); transform: translateY(-2px); }
+  .rocket-canvas { display: block; margin-bottom: 10px; }
+  .rocket-name { font-family: 'Orbitron', monospace; font-size: 0.65rem; color: #fff; letter-spacing: 1px; text-align: center; }
+  .rocket-unlock { font-size: 0.6rem; color: rgba(255,255,255,0.35); margin-top: 4px; text-align: center; }
+  .selected-badge {
+    position: absolute; top: 6px; right: 6px;
+    background: var(--neon-blue); color: #000;
+    font-size: 0.5rem; font-family: 'Orbitron', monospace;
+    padding: 2px 5px; font-weight: 700;
+  }
+
+  /* ── LEVEL ANNOUNCEMENT ── */
+  #levelAnnounce {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(2,8,20,0.7);
+    z-index: 8;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  #levelAnnounce.show { opacity: 1; }
+  #levelAnnounce .la-planet { font-family: 'Orbitron', monospace; font-size: 2.2rem; font-weight: 900; color: #fff; letter-spacing: 4px; }
+  #levelAnnounce .la-sub { font-size: 0.8rem; letter-spacing: 5px; color: var(--neon-blue); margin-top: 8px; }
+
+  /* touch zones */
+  #touchLeft, #touchRight {
+    position: absolute; top: 0; bottom: 0; width: 40%;
+    z-index: 6;
+  }
+  #touchLeft { left: 0; }
+  #touchRight { right: 0; }
+</style>
 </head>
 <body>
+<div id="gameWrapper">
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="gameCanvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
 
-<div id="game-container">
-    <div id="hud" class="hidden">
-        <div class="stat-box" id="planet-name">EARTH</div>
-        <div class="stat-box" id="distance-meter">0 KM</div>
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-box">
+      <div class="hud-label">Distance</div>
+      <div class="hud-value" id="distDisplay">0 KM</div>
     </div>
-
-    <div id="main-menu" class="overlay">
-        <h1>Rocket Rush</h1>
-        <div class="panel">
-            <button onclick="game.start()">PLAY</button>
-            <button onclick="ui.showGarage()">GARAGE</button>
-        </div>
+    <div>
+      <div class="hud-box" style="text-align:center;">
+        <div class="hud-label">Destination</div>
+        <div id="planetLabel">MOON</div>
+      </div>
     </div>
-
-    <div id="garage-menu" class="overlay hidden">
-        <h1>Garage</h1>
-        <div class="panel">
-            <div class="garage-grid" id="garage-list">
-                </div>
-            <button onclick="ui.showMenu()">BACK</button>
-        </div>
+    <div class="hud-box">
+      <div class="hud-label">Level</div>
+      <div class="hud-value" id="levelDisplay">1</div>
     </div>
+  </div>
 
-    <div id="game-over" class="overlay hidden">
-        <h1 style="color: #ff4d4d;">CRASHED!</h1>
-        <div class="panel">
-            <p id="final-stats"></p>
-            <button onclick="game.start()">RESTART</button>
-            <button onclick="ui.showMenu()">MAIN MENU</button>
-        </div>
+  <!-- Touch zones -->
+  <div id="touchLeft"></div>
+  <div id="touchRight"></div>
+
+  <!-- Level Announce -->
+  <div id="levelAnnounce">
+    <div class="la-planet" id="laName">MOON</div>
+    <div class="la-sub">ENTERING ORBIT</div>
+  </div>
+
+  <!-- Main Menu -->
+  <div class="screen" id="menuScreen">
+    <div class="menu-title">ROCKET RUSH</div>
+    <div class="menu-subtitle">Escape the Solar System</div>
+    <button class="btn btn-primary" id="btnPlay">▶ &nbsp; PLAY</button>
+    <button class="btn btn-secondary" id="btnGarage">⬡ &nbsp; GARAGE</button>
+  </div>
+
+  <!-- Garage -->
+  <div class="screen hidden" id="garageScreen">
+    <div class="garage-title">GARAGE</div>
+    <div class="garage-sub">SELECT YOUR ROCKET</div>
+    <div class="rocket-grid" id="rocketGrid"></div>
+    <button class="btn btn-secondary" id="btnGarageBack" style="margin-top:20px;">← BACK</button>
+  </div>
+
+  <!-- Game Over -->
+  <div class="screen hidden" id="gameOverScreen">
+    <div class="go-title">MISSION FAILED</div>
+    <div class="go-stat">
+      <div class="go-stat-label">Distance Traveled</div>
+      <div class="go-stat-value" id="goDistance">0 KM</div>
     </div>
-
-    <canvas id="gameCanvas"></canvas>
+    <div class="go-stat">
+      <div class="go-stat-label">Last Planet</div>
+      <div class="go-stat-value" id="goPlanet">EARTH</div>
+    </div>
+    <div class="go-stat" id="goUnlockWrap" style="display:none;">
+      <div class="go-stat-label" style="color:var(--neon-green);">🔓 UNLOCKED</div>
+      <div class="go-stat-value" id="goUnlock" style="color:var(--neon-green);font-size:1rem;"></div>
+    </div>
+    <div class="go-divider"></div>
+    <div class="go-buttons">
+      <button class="btn btn-primary" id="btnRestart">↺ &nbsp; RETRY</button>
+      <button class="btn btn-secondary" id="btnMenu">⌂ &nbsp; MENU</button>
+    </div>
+  </div>
 </div>
 
 <script>
-/**
- * GAME CONFIGURATION & DATA
- */
+// ═══════════════════════════════════════════
+//  ROCKET RUSH — Complete Game Engine
+// ═══════════════════════════════════════════
+
+const wrapper = document.getElementById('gameWrapper');
+const bgCanvas = document.getElementById('bgCanvas');
+const gameCanvas = document.getElementById('gameCanvas');
+const bgCtx = bgCanvas.getContext('2d');
+const ctx = gameCanvas.getContext('2d');
+
+// ── Resize ──
+function resize() {
+  const W = wrapper.clientWidth, H = wrapper.clientHeight;
+  bgCanvas.width = gameCanvas.width = W;
+  bgCanvas.height = gameCanvas.height = H;
+}
+resize();
+window.addEventListener('resize', () => { resize(); initStars(); });
+let W = () => gameCanvas.width, H = () => gameCanvas.height;
+
+// ════════════════════════════════════════════
+//  PLANET / LEVEL DATA
+// ════════════════════════════════════════════
 const PLANETS = [
-    { name: "Earth", dist: 0, color: "#2b65ec", obstacle: "Debris" },
-    { name: "Moon", dist: 380, color: "#888", obstacle: "Dust Meteor" },
-    { name: "Mercury", dist: 900, color: "#b5a7a7", obstacle: "Metal Junk" },
-    { name: "Venus", dist: 1600, color: "#e3bb76", obstacle: "Sulfur Cloud" },
-    { name: "Mars", dist: 2500, color: "#e27b58", obstacle: "Red Rock" },
-    { name: "Jupiter", dist: 4000, color: "#d39c7e", obstacle: "Storm Core" },
-    { name: "Saturn", dist: 6000, color: "#c5ab6e", obstacle: "Ring Fragment" },
-    { name: "Uranus", dist: 8500, color: "#bbe1e4", obstacle: "Ice Chunk" },
-    { name: "Neptune", dist: 11000, color: "#6081ff", obstacle: "Dark Matter" },
-    { name: "Sun", dist: 15000, color: "#ffd200", obstacle: "Solar Flare" }
+  { name:'EARTH',   bgTop:'#020c1b', bgBot:'#0a2a0a', obstacleColor:'#4a7a3a', distKm:0,       rocketUnlock: null          },
+  { name:'MOON',    bgTop:'#0a0a0a', bgBot:'#1a1a2e', obstacleColor:'#7a7a7a', distKm:384,      rocketUnlock:'moon'         },
+  { name:'MERCURY', bgTop:'#0d0a06', bgBot:'#2a1a08', obstacleColor:'#a06030', distKm:916,      rocketUnlock: null          },
+  { name:'VENUS',   bgTop:'#1a1006', bgBot:'#3a2000', obstacleColor:'#c07a20', distKm:1316,     rocketUnlock: null          },
+  { name:'MARS',    bgTop:'#1a0a00', bgBot:'#3a1000', obstacleColor:'#cc4422', distKm:1536,     rocketUnlock:'mars'         },
+  { name:'JUPITER', bgTop:'#0a0a1a', bgBot:'#1a1030', obstacleColor:'#aa7744', distKm:1778,     rocketUnlock:'jupiter'      },
+  { name:'SATURN',  bgTop:'#0d0d0a', bgBot:'#2a2210', obstacleColor:'#c8aa55', distKm:1919,     rocketUnlock: null          },
+  { name:'URANUS',  bgTop:'#061a1a', bgBot:'#0a3030', obstacleColor:'#44aacc', distKm:1999,     rocketUnlock: null          },
+  { name:'NEPTUNE', bgTop:'#040a20', bgBot:'#081440', obstacleColor:'#2244cc', distKm:2059,     rocketUnlock: null          },
+  { name:'SUN',     bgTop:'#200800', bgBot:'#401000', obstacleColor:'#ff4400', distKm:2119,     rocketUnlock:'sun'          },
 ];
 
-const ROCKETS = {
-    "Earth": { color: "#ffffff", flame: "#00d4ff", name: "Standard" },
-    "Moon": { color: "#aaaaaa", flame: "#dddddd", name: "Lunar" },
-    "Mars": { color: "#ff4d4d", flame: "#ffa500", name: "Red Rover" },
-    "Jupiter": { color: "#d39c7e", flame: "#9c6d52", name: "Stormer" },
-    "Sun": { color: "#ffcc00", flame: "#ff3300", name: "Apollo X" }
+// ════════════════════════════════════════════
+//  ROCKET DEFINITIONS
+// ════════════════════════════════════════════
+const ROCKETS = [
+  { id:'default', name:'PIONEER',    unlockPlanet:null,      color:'#aaddff', accentColor:'#ffffff', glowColor:'rgba(150,200,255,0.8)', flameColor:['#00aaff','#0066cc','#ffffff'] },
+  { id:'moon',    name:'LUNAR',      unlockPlanet:'MOON',    color:'#aaaaaa', accentColor:'#dddddd', glowColor:'rgba(200,200,200,0.6)', flameColor:['#cccccc','#888888','#ffffff'] },
+  { id:'mars',    name:'ARES',       unlockPlanet:'MARS',    color:'#cc4422', accentColor:'#ff6644', glowColor:'rgba(255,100,50,0.8)',  flameColor:['#ff4400','#cc2200','#ff8844'] },
+  { id:'jupiter', name:'STORM',      unlockPlanet:'JUPITER', color:'#aa7744', accentColor:'#ddaa66', glowColor:'rgba(255,180,80,0.7)',  flameColor:['#ffaa00','#cc6600','#ff6600'] },
+  { id:'sun',     name:'SOLAR FURY', unlockPlanet:'SUN',     color:'#ff6600', accentColor:'#ffcc00', glowColor:'rgba(255,200,0,1.0)',   flameColor:['#ffff00','#ff8800','#ff0000'] },
+];
+
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+let state = {
+  screen: 'menu',        // menu | game | garage | gameover
+  distance: 0,
+  level: 0,
+  speed: 2.2,
+  rocketX: 0,
+  rocketY: 0,
+  obstacles: [],
+  particles: [],
+  spawnTimer: 0,
+  spawnInterval: 90,
+  gameRunning: false,
+  selectedRocket: 'default',
+  unlockedRockets: ['default'],
+  keys: { left: false, right: false },
+  touchDir: 0,
+  frameCount: 0,
+  bgOffset: 0,
+  currentPlanetIdx: 0,
+  nextPlanetDistKm: 384,
+  justUnlocked: null,
 };
 
-/**
- * ENGINE CLASSES
- */
-class Game {
-    constructor() {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.resize();
-        window.addEventListener('resize', () => this.resize());
+// load save
+try {
+  const saved = JSON.parse(localStorage.getItem('rocketRush') || '{}');
+  if (saved.unlockedRockets) state.unlockedRockets = saved.unlockedRockets;
+  if (saved.selectedRocket) state.selectedRocket = saved.selectedRocket;
+} catch(e) {}
 
-        this.isRunning = false;
-        this.distance = 0;
-        this.speed = 5;
-        this.currentPlanetIndex = 0;
-        
-        this.stars = Array.from({length: 100}, () => ({
-            x: Math.random() * this.canvas.width,
-            y: Math.random() * this.canvas.height,
-            size: Math.random() * 2,
-            speed: Math.random() * 3 + 1
-        }));
-
-        this.player = {
-            x: this.canvas.width / 2,
-            y: this.canvas.height - 100,
-            width: 30,
-            height: 50,
-            targetX: this.canvas.width / 2
-        };
-
-        this.obstacles = [];
-        this.unlockedRockets = JSON.parse(localStorage.getItem('unlockedRockets')) || ["Earth"];
-        this.selectedRocket = localStorage.getItem('selectedRocket') || "Earth";
-
-        this.initInput();
-    }
-
-    resize() {
-        this.canvas.width = Math.min(window.innerWidth, 500);
-        this.canvas.height = window.innerHeight;
-    }
-
-    initInput() {
-        window.addEventListener('keydown', e => {
-            if (e.key === "ArrowLeft") this.player.targetX -= 40;
-            if (e.key === "ArrowRight") this.player.targetX += 40;
-        });
-
-        this.canvas.addEventListener('touchmove', e => {
-            const touch = e.touches[0];
-            const rect = this.canvas.getBoundingClientRect();
-            this.player.targetX = touch.clientX - rect.left;
-            e.preventDefault();
-        }, {passive: false});
-    }
-
-    start() {
-        this.distance = 0;
-        this.speed = 5;
-        this.currentPlanetIndex = 0;
-        this.obstacles = [];
-        this.player.x = this.canvas.width / 2;
-        this.player.targetX = this.canvas.width / 2;
-        this.isRunning = true;
-        ui.showHUD();
-        this.loop();
-    }
-
-    gameOver() {
-        this.isRunning = false;
-        ui.showGameOver(Math.floor(this.distance), PLANETS[this.currentPlanetIndex].name);
-        
-        // Unlock logic
-        const currentPlanet = PLANETS[this.currentPlanetIndex].name;
-        if (ROCKETS[currentPlanet] && !this.unlockedRockets.includes(currentPlanet)) {
-            this.unlockedRockets.push(currentPlanet);
-            localStorage.setItem('unlockedRockets', JSON.stringify(this.unlockedRockets));
-        }
-    }
-
-    update() {
-        if (!this.isRunning) return;
-
-        this.distance += this.speed / 10;
-        this.speed += 0.001; // Difficulty ramp
-
-        // Level progression
-        if (this.currentPlanetIndex < PLANETS.length - 1) {
-            if (this.distance >= PLANETS[this.currentPlanetIndex + 1].dist) {
-                this.currentPlanetIndex++;
-            }
-        }
-
-        // Move Player
-        let dx = this.player.targetX - this.player.x;
-        this.player.x += dx * 0.1;
-        this.player.x = Math.max(20, Math.min(this.canvas.width - 20, this.player.x));
-
-        // Background Stars
-        this.stars.forEach(s => {
-            s.y += s.speed + (this.speed * 0.5);
-            if (s.y > this.canvas.height) {
-                s.y = 0;
-                s.x = Math.random() * this.canvas.width;
-            }
-        });
-
-        // Obstacles
-        if (Math.random() < 0.03) {
-            this.obstacles.push({
-                x: Math.random() * (this.canvas.width - 40),
-                y: -50,
-                size: 30 + Math.random() * 20,
-                speed: Math.random() * 3 + this.speed
-            });
-        }
-
-        this.obstacles.forEach((o, i) => {
-            o.y += o.speed;
-            
-            // Collision detection
-            const px = this.player.x - this.player.width/2;
-            const py = this.player.y - this.player.height/2;
-            if (px < o.x + o.size && px + this.player.width > o.x &&
-                py < o.y + o.size && py + this.player.height > o.y) {
-                this.gameOver();
-            }
-
-            if (o.y > this.canvas.height) this.obstacles.splice(i, 1);
-        });
-
-        ui.updateHUD(this.distance, PLANETS[this.currentPlanetIndex].name);
-    }
-
-    draw() {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Draw Stars
-        ctx.fillStyle = "white";
-        this.stars.forEach(s => {
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-
-        // Draw Planet (Atmosphere Glow)
-        const p = PLANETS[this.currentPlanetIndex];
-        const gradient = ctx.createRadialGradient(
-            this.canvas.width/2, this.canvas.height + 200, 100,
-            this.canvas.width/2, this.canvas.height + 200, 600
-        );
-        gradient.addColorStop(0, p.color);
-        gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Draw Obstacles
-        ctx.fillStyle = "#555";
-        this.obstacles.forEach(o => {
-            ctx.beginPath();
-            ctx.rect(o.x, o.y, o.size, o.size);
-            ctx.fill();
-            ctx.strokeStyle = "rgba(255,255,255,0.2)";
-            ctx.strokeRect(o.x, o.y, o.size, o.size);
-        });
-
-        // Draw Rocket
-        this.drawRocket(this.player.x, this.player.y);
-    }
-
-    drawRocket(x, y) {
-        const ctx = this.ctx;
-        const rocketData = ROCKETS[this.selectedRocket] || ROCKETS["Earth"];
-        
-        // Flame
-        ctx.fillStyle = rocketData.flame;
-        const flameH = 20 + Math.random() * 15;
-        ctx.beginPath();
-        ctx.moveTo(x - 10, y + 20);
-        ctx.lineTo(x + 10, y + 20);
-        ctx.lineTo(x, y + 20 + flameH);
-        ctx.fill();
-
-        // Body
-        ctx.fillStyle = rocketData.color;
-        ctx.beginPath();
-        ctx.moveTo(x, y - 30); // Tip
-        ctx.lineTo(x + 15, y + 20);
-        ctx.lineTo(x - 15, y + 20);
-        ctx.closePath();
-        ctx.fill();
-
-        // Fins
-        ctx.fillStyle = "#333";
-        ctx.fillRect(x - 20, y + 5, 10, 15);
-        ctx.fillRect(x + 10, y + 5, 10, 15);
-    }
-
-    loop() {
-        if (!this.isRunning) return;
-        this.update();
-        this.draw();
-        requestAnimationFrame(() => this.loop());
-    }
+function save() {
+  localStorage.setItem('rocketRush', JSON.stringify({
+    unlockedRockets: state.unlockedRockets,
+    selectedRocket: state.selectedRocket
+  }));
 }
 
-/**
- * UI CONTROLLER
- */
-const ui = {
-    showMenu: () => {
-        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-        document.getElementById('main-menu').classList.remove('hidden');
-        document.getElementById('hud').classList.add('hidden');
-    },
-    showGarage: () => {
-        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-        document.getElementById('garage-menu').classList.remove('hidden');
-        
-        const list = document.getElementById('garage-list');
-        list.innerHTML = '';
-        
-        Object.keys(ROCKETS).forEach(key => {
-            const isUnlocked = game.unlockedRockets.includes(key);
-            const isSelected = game.selectedRocket === key;
-            const card = document.createElement('div');
-            card.className = `rocket-card ${isUnlocked ? 'unlocked' : ''} ${isSelected ? 'selected' : ''}`;
-            card.innerHTML = `
-                <div style="font-size: 0.8rem">${key}</div>
-                <div style="color: ${ROCKETS[key].color}">▲</div>
-            `;
-            if (isUnlocked) {
-                card.onclick = () => {
-                    game.selectedRocket = key;
-                    localStorage.setItem('selectedRocket', key);
-                    ui.showGarage();
-                };
-            }
-            list.appendChild(card);
-        });
-    },
-    showHUD: () => {
-        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-        document.getElementById('hud').classList.remove('hidden');
-    },
-    updateHUD: (dist, planet) => {
-        document.getElementById('distance-meter').innerText = `${Math.floor(dist)} KM`;
-        document.getElementById('planet-name').innerText = planet.toUpperCase();
-    },
-    showGameOver: (dist, planet) => {
-        document.getElementById('hud').classList.add('hidden');
-        document.getElementById('game-over').classList.remove('hidden');
-        document.getElementById('final-stats').innerText = `You reached ${planet} at ${dist} KM!`;
-    }
-};
+// ════════════════════════════════════════════
+//  STARFIELD
+// ════════════════════════════════════════════
+let stars = [];
+function initStars() {
+  stars = [];
+  const count = Math.floor(W() * H() / 800);
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * W(),
+      y: Math.random() * H(),
+      r: Math.random() * 1.5 + 0.3,
+      speed: Math.random() * 0.5 + 0.1,
+      opacity: Math.random() * 0.8 + 0.2,
+      twinkle: Math.random() * Math.PI * 2,
+    });
+  }
+}
+initStars();
 
-const game = new Game();
-ui.showMenu();
+function drawStars(dt) {
+  const planet = PLANETS[state.currentPlanetIdx];
+  const grad = bgCtx.createLinearGradient(0, 0, 0, H());
+  grad.addColorStop(0, planet.bgTop);
+  grad.addColorStop(1, planet.bgBot);
+  bgCtx.fillStyle = grad;
+  bgCtx.fillRect(0, 0, W(), H());
+
+  stars.forEach(s => {
+    s.y += s.speed * (state.gameRunning ? state.speed * 0.3 : 0.4);
+    s.twinkle += 0.04;
+    if (s.y > H()) { s.y = 0; s.x = Math.random() * W(); }
+    const op = s.opacity * (0.7 + 0.3 * Math.sin(s.twinkle));
+    bgCtx.beginPath();
+    bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    bgCtx.fillStyle = `rgba(255,255,255,${op})`;
+    bgCtx.fill();
+  });
+}
+
+// ════════════════════════════════════════════
+//  DRAW ROCKET
+// ════════════════════════════════════════════
+function drawRocket(ctx, x, y, rocketId, scale, frame) {
+  const R = ROCKETS.find(r => r.id === rocketId) || ROCKETS[0];
+  const s = scale || 1;
+  ctx.save();
+  ctx.translate(x, y);
+
+  const flameLen = 18 + Math.sin(frame * 0.3) * 5;
+  const flameW = 7 * s;
+
+  // outer glow
+  const grd = ctx.createRadialGradient(0, 8 * s, 2, 0, 8 * s, 30 * s);
+  grd.addColorStop(0, R.glowColor);
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.fillRect(-30 * s, -10 * s, 60 * s, 80 * s);
+
+  // flame layers
+  for (let fi = 0; fi < 3; fi++) {
+    const fl = (flameLen - fi * 4) * s;
+    const fw = (flameW - fi * 1.5);
+    const opacity = 0.9 - fi * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(-fw * 0.5, 20 * s);
+    ctx.quadraticCurveTo(0, 20 * s + fl * 0.6, 0, 20 * s + fl);
+    ctx.quadraticCurveTo(0, 20 * s + fl * 0.6, fw * 0.5, 20 * s);
+    ctx.closePath();
+    ctx.fillStyle = R.flameColor[fi] + Math.floor(opacity * 255).toString(16).padStart(2,'0');
+    ctx.fill();
+  }
+
+  // engine nozzle
+  ctx.beginPath();
+  ctx.moveTo(-8 * s, 14 * s);
+  ctx.lineTo(8 * s, 14 * s);
+  ctx.lineTo(6 * s, 20 * s);
+  ctx.lineTo(-6 * s, 20 * s);
+  ctx.closePath();
+  ctx.fillStyle = '#333';
+  ctx.fill();
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // body
+  ctx.beginPath();
+  ctx.moveTo(0, -22 * s);
+  ctx.bezierCurveTo(10 * s, -10 * s, 10 * s, 6 * s, 8 * s, 14 * s);
+  ctx.lineTo(-8 * s, 14 * s);
+  ctx.bezierCurveTo(-10 * s, 6 * s, -10 * s, -10 * s, 0, -22 * s);
+  ctx.closePath();
+  ctx.fillStyle = R.color;
+  ctx.fill();
+  ctx.strokeStyle = R.accentColor;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // window
+  ctx.beginPath();
+  ctx.arc(0, -4 * s, 5 * s, 0, Math.PI * 2);
+  ctx.fillStyle = rocketId === 'sun' ? '#ffcc44' : '#88ddff';
+  ctx.fill();
+  ctx.strokeStyle = R.accentColor;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // highlight
+  ctx.beginPath();
+  ctx.moveTo(-2 * s, -18 * s);
+  ctx.quadraticCurveTo(-7 * s, -5 * s, -6 * s, 10 * s);
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // wings
+  [[-1], [1]].forEach(([side]) => {
+    ctx.beginPath();
+    ctx.moveTo(side * 8 * s, 4 * s);
+    ctx.lineTo(side * 18 * s, 14 * s);
+    ctx.lineTo(side * 8 * s, 14 * s);
+    ctx.closePath();
+    ctx.fillStyle = R.accentColor;
+    ctx.fill();
+  });
+
+  // special sun flame
+  if (rocketId === 'sun') {
+    const flicker = Math.sin(frame * 0.5) * 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, (14 + flicker) * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,220,0,0.3)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════
+//  DRAW OBSTACLE
+// ════════════════════════════════════════════
+function drawObstacle(ob, frame) {
+  const planet = PLANETS[state.currentPlanetIdx];
+  ctx.save();
+  ctx.translate(ob.x, ob.y);
+
+  if (ob.type === 'meteor') {
+    ctx.rotate(ob.rot);
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const r = ob.r * (0.7 + Math.cos(i * 1.7) * 0.3);
+      i === 0 ? ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r)
+               : ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+    }
+    ctx.closePath();
+    const mg = ctx.createRadialGradient(0,0,0,0,0,ob.r);
+    mg.addColorStop(0, lightenColor(planet.obstacleColor, 40));
+    mg.addColorStop(1, planet.obstacleColor);
+    ctx.fillStyle = mg;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+  } else if (ob.type === 'satellite') {
+    // body
+    ctx.fillStyle = '#aaaacc';
+    ctx.fillRect(-12, -6, 24, 12);
+    // panels
+    [-1,1].forEach(side => {
+      ctx.fillStyle = '#2244aa';
+      ctx.fillRect(side * 12, -4, side * 16, 8);
+      ctx.strokeStyle = '#4466cc';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(side * 12, -4, side * 16, 8);
+    });
+    // antenna
+    ctx.beginPath();
+    ctx.moveTo(0, -6); ctx.lineTo(0, -16); ctx.lineTo(6, -18);
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+  } else if (ob.type === 'debris') {
+    ctx.rotate(ob.rot);
+    ctx.beginPath();
+    ctx.rect(-ob.r, -ob.r * 0.5, ob.r * 2, ob.r);
+    ctx.fillStyle = planet.obstacleColor;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function lightenColor(hex, amt) {
+  let r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  r = Math.min(255, r+amt); g = Math.min(255, g+amt); b = Math.min(255, b+amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ════════════════════════════════════════════
+//  PARTICLE SYSTEM
+// ════════════════════════════════════════════
+function spawnParticles(x, y) {
+  for (let i = 0; i < 20; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 5 + 1;
+    state.particles.push({
+      x, y,
+      vx: Math.cos(a) * spd,
+      vy: Math.sin(a) * spd,
+      life: 1,
+      r: Math.random() * 4 + 2,
+      color: ['#ff6600','#ffaa00','#ff0000','#ffffff'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+
+function updateParticles() {
+  state.particles = state.particles.filter(p => p.life > 0);
+  state.particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    p.vy -= 0.1;
+    p.life -= 0.04;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fillStyle = p.color + Math.floor(p.life * 200).toString(16).padStart(2,'0');
+    ctx.fill();
+  });
+}
+
+// ════════════════════════════════════════════
+//  SPAWN OBSTACLE
+// ════════════════════════════════════════════
+function spawnObstacle() {
+  const types = ['meteor','meteor','satellite','debris'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  const margin = 30;
+  state.obstacles.push({
+    x: margin + Math.random() * (W() - margin * 2),
+    y: -30,
+    r: type === 'meteor' ? 10 + Math.random() * 16 : 14,
+    type,
+    speed: state.speed * (0.6 + Math.random() * 0.6),
+    vx: (Math.random() - 0.5) * 1.2,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.05,
+  });
+}
+
+// ════════════════════════════════════════════
+//  COLLISION
+// ════════════════════════════════════════════
+function checkCollision() {
+  const rx = state.rocketX, ry = state.rocketY;
+  const rr = 10; // rocket hitbox radius
+  for (const ob of state.obstacles) {
+    const dx = ob.x - rx, dy = ob.y - ry;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < ob.r * 0.7 + rr) return true;
+  }
+  return false;
+}
+
+// ════════════════════════════════════════════
+//  LEVEL PROGRESSION
+// ════════════════════════════════════════════
+function checkLevelUp() {
+  for (let i = 1; i < PLANETS.length; i++) {
+    if (state.currentPlanetIdx < i && state.distance >= PLANETS[i].distKm) {
+      state.currentPlanetIdx = i;
+      state.level = i;
+      state.speed = 2.2 + i * 0.3;
+      state.spawnInterval = Math.max(40, 90 - i * 6);
+
+      // unlock rocket
+      const planet = PLANETS[i];
+      if (planet.rocketUnlock && !state.unlockedRockets.includes(planet.rocketUnlock)) {
+        state.unlockedRockets.push(planet.rocketUnlock);
+        state.justUnlocked = planet.rocketUnlock;
+        save();
+      }
+
+      showLevelAnnounce(planet.name);
+      break;
+    }
+  }
+}
+
+function showLevelAnnounce(name) {
+  const el = document.getElementById('levelAnnounce');
+  document.getElementById('laName').textContent = name;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ════════════════════════════════════════════
+//  GAME LOOP
+// ════════════════════════════════════════════
+let lastTime = 0;
+let animId = null;
+
+function gameLoop(ts) {
+  const dt = Math.min((ts - lastTime) / 16.67, 3);
+  lastTime = ts;
+  state.frameCount++;
+
+  // ── Background ──
+  bgCtx.clearRect(0, 0, W(), H());
+  drawStars(dt);
+
+  ctx.clearRect(0, 0, W(), H());
+
+  if (state.gameRunning) {
+    // ── Distance ──
+    state.distance += state.speed * dt * 0.04;
+    document.getElementById('distDisplay').textContent = Math.floor(state.distance) + ' KM';
+    document.getElementById('levelDisplay').textContent = state.level + 1;
+    document.getElementById('planetLabel').textContent = PLANETS[state.currentPlanetIdx].name;
+
+    // ── Rocket movement ──
+    const spd = 3.5;
+    if (state.keys.left || state.touchDir < 0)  state.rocketX -= spd * dt;
+    if (state.keys.right || state.touchDir > 0) state.rocketX += spd * dt;
+    state.rocketX = Math.max(20, Math.min(W() - 20, state.rocketX));
+
+    // ── Obstacles ──
+    state.spawnTimer += dt;
+    if (state.spawnTimer >= state.spawnInterval) {
+      spawnObstacle();
+      state.spawnTimer = 0;
+      // dynamic difficulty
+      if (state.spawnInterval > 30) state.spawnInterval -= 0.1;
+      if (state.speed < 5) state.speed += 0.002;
+    }
+
+    state.obstacles = state.obstacles.filter(o => o.y < H() + 50);
+    state.obstacles.forEach(o => {
+      o.y += o.speed * dt;
+      o.x += o.vx * dt;
+      o.rot += o.rotSpeed * dt;
+      if (o.x < 10 || o.x > W() - 10) o.vx *= -1;
+    });
+
+    // ── Draw obstacles ──
+    state.obstacles.forEach(o => drawObstacle(o, state.frameCount));
+
+    // ── Rocket trail ──
+    if (state.frameCount % 2 === 0) {
+      state.particles.push({
+        x: state.rocketX + (Math.random()-0.5)*5,
+        y: state.rocketY + 22,
+        vx: (Math.random()-0.5) * 0.8,
+        vy: 1 + Math.random() * 1.5,
+        life: 0.5 + Math.random()*0.3,
+        r: 2 + Math.random()*2,
+        color: ROCKETS.find(r=>r.id===state.selectedRocket)?.flameColor[Math.floor(Math.random()*3)] || '#00aaff'
+      });
+    }
+
+    updateParticles();
+
+    // ── Draw rocket ──
+    drawRocket(ctx, state.rocketX, state.rocketY, state.selectedRocket, 1, state.frameCount);
+
+    // ── Collision ──
+    if (checkCollision()) {
+      spawnParticles(state.rocketX, state.rocketY);
+      endGame();
+      updateParticles();
+    }
+
+    // ── Level check ──
+    checkLevelUp();
+  }
+
+  animId = requestAnimationFrame(gameLoop);
+}
+
+// ════════════════════════════════════════════
+//  START / END GAME
+// ════════════════════════════════════════════
+function startGame() {
+  state.distance = 0;
+  state.level = 0;
+  state.speed = 2.2;
+  state.spawnInterval = 90;
+  state.spawnTimer = 0;
+  state.obstacles = [];
+  state.particles = [];
+  state.frameCount = 0;
+  state.currentPlanetIdx = 0;
+  state.rocketX = W() / 2;
+  state.rocketY = H() * 0.72;
+  state.gameRunning = true;
+  state.justUnlocked = null;
+  state.keys = { left: false, right: false };
+  state.touchDir = 0;
+
+  showScreen('game');
+  document.getElementById('hud').classList.remove('hidden');
+}
+
+function endGame() {
+  state.gameRunning = false;
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('goDistance').textContent = Math.floor(state.distance) + ' KM';
+  document.getElementById('goPlanet').textContent = PLANETS[state.currentPlanetIdx].name;
+
+  const unlockWrap = document.getElementById('goUnlockWrap');
+  if (state.justUnlocked) {
+    const rocket = ROCKETS.find(r => r.id === state.justUnlocked);
+    document.getElementById('goUnlock').textContent = rocket ? rocket.name + ' ROCKET' : '';
+    unlockWrap.style.display = 'block';
+  } else {
+    unlockWrap.style.display = 'none';
+  }
+  showScreen('gameover');
+}
+
+// ════════════════════════════════════════════
+//  GARAGE
+// ════════════════════════════════════════════
+function buildGarage() {
+  const grid = document.getElementById('rocketGrid');
+  grid.innerHTML = '';
+  ROCKETS.forEach(rocket => {
+    const unlocked = state.unlockedRockets.includes(rocket.id);
+    const selected = state.selectedRocket === rocket.id;
+    const card = document.createElement('div');
+    card.className = 'rocket-card' + (unlocked ? '' : ' locked') + (selected ? ' selected' : '');
+
+    const rc = document.createElement('canvas');
+    rc.className = 'rocket-canvas';
+    rc.width = 80; rc.height = 80;
+    const rctx = rc.getContext('2d');
+
+    (function animateCard() {
+      rctx.clearRect(0,0,80,80);
+      rctx.fillStyle = '#020c1b';
+      rctx.fillRect(0,0,80,80);
+      const f = Date.now() / 80;
+      drawRocket(rctx, 40, 48, rocket.id, 1.3, f);
+      if (unlocked) requestAnimationFrame(animateCard);
+    })();
+
+    const name = document.createElement('div');
+    name.className = 'rocket-name';
+    name.textContent = rocket.name;
+
+    const sub = document.createElement('div');
+    sub.className = 'rocket-unlock';
+    if (!unlocked) sub.textContent = 'REACH ' + rocket.unlockPlanet;
+    else if (selected) {
+      const badge = document.createElement('div');
+      badge.className = 'selected-badge';
+      badge.textContent = 'ACTIVE';
+      card.appendChild(badge);
+    }
+
+    card.appendChild(rc);
+    card.appendChild(name);
+    card.appendChild(sub);
+
+    if (unlocked) {
+      card.addEventListener('click', () => {
+        state.selectedRocket = rocket.id;
+        save();
+        buildGarage();
+      });
+    }
+    grid.appendChild(card);
+  });
+}
+
+// ════════════════════════════════════════════
+//  SCREEN MANAGEMENT
+// ════════════════════════════════════════════
+function showScreen(name) {
+  const map = { menu:'menuScreen', game:null, garage:'garageScreen', gameover:'gameOverScreen' };
+  ['menuScreen','garageScreen','gameOverScreen'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  const target = map[name];
+  if (target) {
+    document.getElementById(target).classList.remove('hidden');
+  }
+  state.screen = name;
+}
+
+// ════════════════════════════════════════════
+//  CONTROLS
+// ════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft')  { state.keys.left = true; e.preventDefault(); }
+  if (e.key === 'ArrowRight') { state.keys.right = true; e.preventDefault(); }
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft')  state.keys.left = false;
+  if (e.key === 'ArrowRight') state.keys.right = false;
+});
+
+// Touch controls
+let touchStartX = 0;
+document.getElementById('touchLeft').addEventListener('touchstart', e => { state.touchDir = -1; e.preventDefault(); }, {passive:false});
+document.getElementById('touchLeft').addEventListener('touchend',   e => { state.touchDir = 0; e.preventDefault(); }, {passive:false});
+document.getElementById('touchRight').addEventListener('touchstart',e => { state.touchDir = 1; e.preventDefault(); }, {passive:false});
+document.getElementById('touchRight').addEventListener('touchend',  e => { state.touchDir = 0; e.preventDefault(); }, {passive:false});
+
+// Swipe fallback on game canvas
+gameCanvas.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
+gameCanvas.addEventListener('touchmove', e => {
+  const dx = e.touches[0].clientX - touchStartX;
+  state.touchDir = dx > 10 ? 1 : dx < -10 ? -1 : 0;
+}, {passive:true});
+gameCanvas.addEventListener('touchend', () => { state.touchDir = 0; });
+
+// ════════════════════════════════════════════
+//  BUTTON EVENTS
+// ════════════════════════════════════════════
+document.getElementById('btnPlay').addEventListener('click', startGame);
+document.getElementById('btnGarage').addEventListener('click', () => { buildGarage(); showScreen('garage'); });
+document.getElementById('btnGarageBack').addEventListener('click', () => showScreen('menu'));
+document.getElementById('btnRestart').addEventListener('click', startGame);
+document.getElementById('btnMenu').addEventListener('click', () => { showScreen('menu'); document.getElementById('hud').classList.add('hidden'); });
+
+// ════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════
+showScreen('menu');
+requestAnimationFrame(ts => { lastTime = ts; gameLoop(ts); });
 </script>
 </body>
 </html>
-
